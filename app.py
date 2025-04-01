@@ -67,16 +67,30 @@ def make_forecast(forecast_dates, blend_weights, recent_sales=None):
 st.title("🍪 Gladstone Sales Forecast")
 # Optional recent sales input
 st.subheader("📊 Recent Sales (Optional)")
-st.markdown("Enter sales data from the last three days to improve forecast accuracy.")
+st.markdown("Enter sales data from the last three non-Sunday days to improve forecast accuracy.")
 
 recent_sales = []
 col1, col2 = st.columns(2)
-for i in range(3):
-    date = datetime.today() - timedelta(days=2-i)
+
+# Get the last three non-Sunday days
+current_date = datetime.today()
+days_to_show = []
+days_found = 0
+days_back = 1  # Start from yesterday
+
+while days_found < 3:
+    check_date = current_date - timedelta(days=days_back)
+    if check_date.weekday() != 6:  # Not Sunday
+        days_to_show.append(check_date)
+        days_found += 1
+    days_back += 1
+
+# Show inputs in reverse chronological order
+for date in reversed(days_to_show):
     with col1:
-        minis = st.number_input(f"{date.strftime('%A')} - Minis", min_value=0, value=0, key=f"mini_{i}")
+        minis = st.number_input(f"{date.strftime('%A')} - Minis", min_value=0, value=0, key=f"mini_{date.strftime('%Y%m%d')}")
     with col2:
-        full = st.number_input(f"{date.strftime('%A')} - Full Size", min_value=0, value=0, key=f"full_{i}")
+        full = st.number_input(f"{date.strftime('%A')} - Full Size", min_value=0, value=0, key=f"full_{date.strftime('%Y%m%d')}")
     recent_sales.append((minis, full))
 
 # Date range selection
