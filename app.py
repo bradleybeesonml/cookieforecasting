@@ -67,7 +67,7 @@ def make_forecast(forecast_dates, blend_weights, recent_sales=None):
 st.title("🍪 Gladstone Sales Forecast")
 # Optional recent sales input
 st.subheader("📊 Recent Sales (Optional)")
-st.markdown("Enter sales data from the last three non-Sunday days to improve forecast accuracy.")
+st.markdown("Enter sales data from the last three sales days to improve forecast accuracy.")
 
 recent_sales = []
 col1, col2 = st.columns(2)
