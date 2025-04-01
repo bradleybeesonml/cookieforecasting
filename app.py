@@ -19,7 +19,7 @@ full_xgb = joblib.load("full_xgb.pkl")
 def forecast_range(start_date, end_date):
     return pd.date_range(start=start_date, end=end_date)
 
-def make_forecast(forecast_dates, blend_weights):
+def make_forecast(forecast_dates, blend_weights, recent_sales=None):
     df = pd.DataFrame({"Date": forecast_dates})
     df["dow"] = df["Date"].dt.weekday
     df["month"] = df["Date"].dt.month
@@ -39,6 +39,22 @@ def make_forecast(forecast_dates, blend_weights):
     df["Predicted Minis"] = blend_weights[0] * minis_prophet_pred.values + blend_weights[1] * minis_xgb_pred
     df["Predicted Full Size"] = blend_weights[2] * full_prophet_pred.values + blend_weights[3] * full_xgb_pred
 
+    # Adjust predictions based on recent sales if provided
+    if recent_sales is not None:
+        # Calculate the average recent sales
+        recent_minis_avg = np.mean([x[0] for x in recent_sales])
+        recent_full_avg = np.mean([x[1] for x in recent_sales])
+        
+        # Calculate the ratio between recent and predicted sales for the first day
+        minis_ratio = recent_minis_avg / df["Predicted Minis"].iloc[0] if df["Predicted Minis"].iloc[0] > 0 else 1
+        full_ratio = recent_full_avg / df["Predicted Full Size"].iloc[0] if df["Predicted Full Size"].iloc[0] > 0 else 1
+        
+        # Apply the ratio to all predictions, with a gradual fade-out effect
+        for i in range(len(df)):
+            fade_factor = max(0, 1 - (i / 7))  # Fade out over a week
+            df.loc[df.index[i], "Predicted Minis"] *= (1 + (minis_ratio - 1) * fade_factor)
+            df.loc[df.index[i], "Predicted Full Size"] *= (1 + (full_ratio - 1) * fade_factor)
+
     df.loc[df["is_closed"] == 1, ["Predicted Minis", "Predicted Full Size"]] = 0
     
     # Round predictions to whole numbers
@@ -51,7 +67,22 @@ def make_forecast(forecast_dates, blend_weights):
 st.title("🍪 Gladstone Sales Forecast")
 st.markdown("Select your desired forecast date range to generate predictions.")
 
+# Optional recent sales input
+st.subheader("📊 Recent Sales (Optional)")
+st.markdown("Enter sales data from the last three days to improve forecast accuracy.")
+
+recent_sales = []
+col1, col2 = st.columns(2)
+for i in range(3):
+    date = datetime.today() - timedelta(days=2-i)
+    with col1:
+        minis = st.number_input(f"{date.strftime('%A')} - Minis", min_value=0, value=0, key=f"mini_{i}")
+    with col2:
+        full = st.number_input(f"{date.strftime('%A')} - Full Size", min_value=0, value=0, key=f"full_{i}")
+    recent_sales.append((minis, full))
+
 # Date range selection
+st.subheader("📅 Forecast Range")
 col1, col2 = st.columns(2)
 with col1:
     start_date = st.date_input("Start Date", value=datetime.today())
@@ -61,8 +92,11 @@ with col2:
 if st.button("📊 Generate Forecast"):
     forecast_dates = forecast_range(start_date, end_date)
     
+    # Only use recent sales if at least one day has non-zero values
+    recent_sales_to_use = recent_sales if any(x[0] > 0 or x[1] > 0 for x in recent_sales) else None
+    
     # Generate forecast using the models
-    blend_df = make_forecast(forecast_dates, blend_weights=(0.7, 0.3, 0.8, 0.2))
+    blend_df = make_forecast(forecast_dates, blend_weights=(0.7, 0.3, 0.8, 0.2), recent_sales=recent_sales_to_use)
 
     st.subheader("🔮 Forecasted Sales")
     # Create a copy for display with formatted dates
