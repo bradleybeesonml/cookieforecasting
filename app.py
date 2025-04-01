@@ -23,22 +23,8 @@ minis_xgb = joblib.load("minis_xgb.pkl")
 full_xgb = joblib.load("full_xgb.pkl")
 
 # --- Helper functions ---
-def create_recent_df(mini_sales, full_sales, base_monday):
-    dates = [base_monday + timedelta(days=i) for i in range(6)]  # Monday to Saturday
-    df = pd.DataFrame({
-        "Date": dates,
-        "Number Minis": mini_sales,
-        "Number Full Size": full_sales
-    })
-    df["is_closed"] = 0
-    df["is_early_close"] = 0
-    df["dow"] = df["Date"].dt.weekday
-    df["month"] = df["Date"].dt.month
-    df["day"] = df["Date"].dt.day
-    return df
-
-def forecast_range(start_date, days):
-    return pd.date_range(start=start_date, periods=days)
+def forecast_range(start_date, end_date):
+    return pd.date_range(start=start_date, end=end_date)
 
 def make_forecast(forecast_dates, blend_weights):
     df = pd.DataFrame({"Date": forecast_dates})
@@ -65,29 +51,19 @@ def make_forecast(forecast_dates, blend_weights):
 
 # --- Streamlit Interface ---
 st.title("🍪 Crumbl Cookie Sales Forecast")
-st.markdown("Enter the last **full calendar week of sales (Mon-Sat)** and desired forecast range.")
+st.markdown("Select your desired forecast date range to generate predictions.")
 
-st.subheader("1. Sales for Last Week")
-days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
-mini_sales = []
-full_sales = []
-
+# Date range selection
 col1, col2 = st.columns(2)
 with col1:
-    for day in days:
-        mini_sales.append(st.number_input(f"{day} - Minis", min_value=0, step=1, key=f"mini_{day}"))
+    start_date = st.date_input("Start Date", value=datetime.today())
 with col2:
-    for day in days:
-        full_sales.append(st.number_input(f"{day} - Full Size", min_value=0, step=1, key=f"full_{day}"))
+    end_date = st.date_input("End Date", value=datetime.today() + timedelta(days=14))
 
-base_monday = st.date_input("Start date of last Monday", value=datetime.today() - timedelta(days=datetime.today().weekday() + 7))
-forecast_days = st.number_input("Forecast how many days ahead?", min_value=1, max_value=60, value=14)
-
-if st.button("📊 Forecast Sales"):
-    recent_df = create_recent_df(mini_sales, full_sales, pd.to_datetime(base_monday))
-    forecast_dates = forecast_range(datetime.today(), forecast_days)
-
-    # Use the last week only as context; models are pre-trained
+if st.button("📊 Generate Forecast"):
+    forecast_dates = forecast_range(start_date, end_date)
+    
+    # Generate forecast using the models
     blend_df = make_forecast(forecast_dates, blend_weights=(0.7, 0.3, 0.8, 0.2))
 
     st.subheader("🔮 Forecasted Sales")
