@@ -65,9 +65,10 @@ if st.button("📊 Generate Forecast"):
     blend_df = make_forecast(forecast_dates, blend_weights=(0.7, 0.3, 0.8, 0.2))
 
     st.subheader("🔮 Forecasted Sales")
-    # Format the date to include day of week
-    blend_df["Date"] = blend_df["Date"].dt.strftime("%A, %Y-%m-%d")
-    st.dataframe(blend_df[["Date", "Predicted Minis", "Predicted Full Size"]].set_index("Date"))
+    # Create a copy for display with formatted dates
+    display_df = blend_df.copy()
+    display_df["Date"] = display_df["Date"].dt.strftime("%A, %Y-%m-%d")
+    st.dataframe(display_df[["Date", "Predicted Minis", "Predicted Full Size"]].set_index("Date"))
 
     # Plot
     st.subheader("📈 Forecast Plot")
