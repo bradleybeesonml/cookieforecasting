@@ -65,8 +65,6 @@ def make_forecast(forecast_dates, blend_weights, recent_sales=None):
 
 # --- Streamlit Interface ---
 st.title("🍪 Gladstone Sales Forecast")
-st.markdown("Select your desired forecast date range to generate predictions.")
-
 # Optional recent sales input
 st.subheader("📊 Recent Sales (Optional)")
 st.markdown("Enter sales data from the last three days to improve forecast accuracy.")
@@ -83,6 +81,8 @@ for i in range(3):
 
 # Date range selection
 st.subheader("📅 Forecast Range")
+st.markdown("Select your desired forecast date range to generate predictions.")
+
 col1, col2 = st.columns(2)
 with col1:
     start_date = st.date_input("Start Date", value=datetime.today())
