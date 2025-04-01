@@ -40,6 +40,11 @@ def make_forecast(forecast_dates, blend_weights):
     df["Predicted Full Size"] = blend_weights[2] * full_prophet_pred.values + blend_weights[3] * full_xgb_pred
 
     df.loc[df["is_closed"] == 1, ["Predicted Minis", "Predicted Full Size"]] = 0
+    
+    # Round predictions to whole numbers
+    df["Predicted Minis"] = df["Predicted Minis"].round().astype(int)
+    df["Predicted Full Size"] = df["Predicted Full Size"].round().astype(int)
+    
     return df
 
 # --- Streamlit Interface ---
